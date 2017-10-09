@@ -4,12 +4,15 @@ import PropTypes from 'prop-types';
 import { Row, Col } from 'react-flexbox-grid';
 import { Link } from 'react-router-dom';
 
+import Icon from '@folio/stripes-components/lib/Icon';
 import KeyValue from '@folio/stripes-components/lib/KeyValue';
 import Pane from '@folio/stripes-components/lib/Pane';
+import PaneMenu from '@folio/stripes-components/lib/PaneMenu';
 
 class ViewRequest extends React.Component {
   static propTypes = {
     joinRequest: PropTypes.func.isRequired,
+    notesToggle: PropTypes.func,
     onClose: PropTypes.func.isRequired,
     paneWidth: PropTypes.string,
     resources: PropTypes.shape({
@@ -121,8 +124,14 @@ class ViewRequest extends React.Component {
     const requesterRecordLink = requesterName ? <Link to={`/users/view/${request.requesterId}`}>{requesterName}</Link> : '';
     const borrowerRecordLink = borrowerName ? <Link to={`/users/view/${borrower.id}`}>{borrowerName}</Link> : '';
 
+    const detailMenu = (
+      <PaneMenu>
+        <button id="clickable-show-notes" style={{ visibility: !request ? 'hidden' : 'visible' }} onClick={this.props.notesToggle} title="Show Notes"><Icon icon="comment" />Notes</button>
+      </PaneMenu>
+    )
+
     return request ? (
-      <Pane defaultWidth={this.props.paneWidth} paneTitle="Request Detail" dismissible onClose={this.props.onClose}>
+      <Pane defaultWidth={this.props.paneWidth} paneTitle="Request Detail"  lastMenu={detailMenu} dismissible onClose={this.props.onClose}>
         <Row>
           <Col xs={12}>
             <KeyValue label="Request type" value={_.get(request, ['requestType'], '')} />

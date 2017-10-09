@@ -10,6 +10,7 @@ import FilterGroups, { initialFilterState, onChangeFilter as commonChangeFilter 
 import FilterPaneSearch from '@folio/stripes-components/lib/FilterPaneSearch';
 import Layer from '@folio/stripes-components/lib/Layer';
 import MultiColumnList from '@folio/stripes-components/lib/MultiColumnList';
+import Notes from '@folio/util-notes/lib/Notes';
 import Pane from '@folio/stripes-components/lib/Pane';
 import Paneset from '@folio/stripes-components/lib/Paneset';
 import PaneMenu from '@folio/stripes-components/lib/PaneMenu';
@@ -64,6 +65,9 @@ class Requests extends React.Component {
         replace: PropTypes.func,
       }),
     }).isRequired,
+    notes: PropTypes.shape({
+      records: PropTypes.arrayOf(PropTypes.object),
+    }),
     okapi: PropTypes.object.isRequired,
     resources: PropTypes.shape({
       requests: PropTypes.shape({
@@ -109,6 +113,17 @@ class Requests extends React.Component {
         staticFallback: { params: {} },
       },
     },
+    notes: {
+      type: 'okapi',
+      path: 'notes',
+      records: 'notes',
+      clear: false,
+      GET: {
+        params: {
+          query: 'link=:{id}',
+        },
+      },
+    },
     patronGroups: {
       type: 'okapi',
       path: 'groups',
@@ -132,10 +147,12 @@ class Requests extends React.Component {
       selectedItem: {},
       searchTerm: query.query || '',
       sortOrder: query.sort || '',
+      showNotesPane: false,
     };
 
     this.addRequestFields = this.addRequestFields.bind(this);
     this.collapseDetails = this.collapseDetails.bind(this);
+    this.connectedNotes = props.stripes.connect(Notes);
     this.connectedViewRequest = props.stripes.connect(ViewRequest);
     this.create = this.create.bind(this);
     this.findItem = this.findItem.bind(this);
@@ -149,6 +166,7 @@ class Requests extends React.Component {
     this.onClickCloseNewRequest = this.onClickCloseNewRequest.bind(this);
     this.onSelectRow = this.onSelectRow.bind(this);
     this.onSort = this.onSort.bind(this);
+    this.toggleNotes = this.toggleNotes.bind(this);
     this.transitionToParams = transitionToParams.bind(this);
     this.updateFilters = this.updateFilters.bind(this);
   }
@@ -218,6 +236,15 @@ class Requests extends React.Component {
       selectedItem: {},
     });
     this.props.history.push(`${this.props.match.path}${this.props.location.search}`);
+  }
+
+  toggleNotes() {
+    this.setState((curState) => {
+      const show = !curState.showNotesPane;
+      return {
+        showNotesPane: show,
+      };
+    });
   }
 
   // idType can be 'id', 'barcode', etc.
@@ -386,6 +413,7 @@ class Requests extends React.Component {
               joinRequest={this.addRequestFields}
               paneWidth="44%"
               onClose={this.collapseDetails}
+              notesToggle={this.toggleNotes}
               {...props}
             />
           )
@@ -405,6 +433,21 @@ class Requests extends React.Component {
             dateFormatter={this.makeLocaleDateString}
           />
         </Layer>
+        {
+          this.state.showNotesPane &&
+            <Route
+              path={`${this.props.match.path}/view/:id`}
+              render={props => <this.connectedNotes
+                stripes={stripes}
+                okapi={this.okapi}
+                onToggle={this.toggleNotes}
+                link={`requests/${props.match.params.id}`}
+                notesResource={this.props.resources.notes}
+                requestsResource={this.props.resources.requests}
+                {...props}
+              />}
+            />
+          }
       </Paneset>
     );
   }
